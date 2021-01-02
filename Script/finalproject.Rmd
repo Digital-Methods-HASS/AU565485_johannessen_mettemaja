@@ -1,0 +1,147 @@
+---
+title: "Finalproject: colonial transformation"
+output: html_document
+---
+# Import of packages 
+
+In order to work with my data in R, I need to install two packages; the tidyverse and the readxl, which is done by using the library function. 
+
+```{r message=FALSE}
+library(tidyverse)
+library(readxl)
+```
+
+# Import of data 
+
+The data used in the project is from Harvard Dataverse and is a research project that measures the impacts of colonialism in Africa and Asia. The dataset can be found by following this link: https://dataverse.harvard.edu/dataset.xhtml?persistentId=doi:10.7910/DVN/UQZFYA. 
+I have imported the data, which is a spreadsheet in this case by using the <- function and named the spreadsheet col_transfor which is short for the original spreadsheet name "Copy of Colonial_transformation_data.xls". 
+
+```{r}
+col_transfor <- read_excel("Copy of Colonial_transformation_data.xls")
+```
+
+
+# Analysis
+
+The following codes are a part of my analysis which will lead me to answer my research question. 
+The analysis will contain functions that cleans the spreadsheet, functions that arrange the data and visualization. Further detailed explanations of the codes will appear in the report that goes with this project. 
+
+## Clean spreadsheet
+
+In the column "main colonial motherland" x's appears, which will be disturbing for my visualization later in the analysis. Therefore i use the code filter to filter out all the x's. This creates a new dataset in the R environment which i named "cleaned_colonies". 
+
+```{r}
+cleaned_colonies <-col_transfor %>%
+  filter(`Main colonial motherland`!= "x")
+cleaned_colonies
+```
+
+## Arrange data with the countries that was colonized for the longest time
+
+I wanted to see the countries listed in order of how many years they were a colony. Therefore i use the code arrange and desc which stands for descending order and implemented it on the column COLYEARS. 
+
+```{r}
+col_transfor %>% 
+  arrange(desc(COLYEARS)) %>%
+  select(`Country Name`, COLYEARS, everything())
+```
+### Visualization of the colonies that was colonialized for the longest time 
+
+This is a visualization that shows what I just found out in the code above.
+I chose only to see the top 30 therefore i use the code top_n(30)
+
+```{r}
+col_transfor %>%
+  arrange(desc(COLYEARS)) %>%
+  top_n(30)%>%
+  mutate(`Country Name` = reorder(`Country Name`, COLYEARS)) %>%
+  ggplot(aes(x = `Country Name`, y = COLYEARS)) +
+  geom_col() +
+  xlab(NULL) +
+  coord_flip() +
+      labs(x = "Country Name",
+      y = "Years as colony",
+      title = "Duration as colonies")
+```
+
+## Visualization of which countries owned the most colonies
+
+Now I wished to see which colonial powers owned the most colonies. In order to see that, i use a visualization called ggplot and implement it on the collumn named "Main colonial motherland", and asked R to show me this visualization i bars using the geom_bar function. 
+
+```{r}
+cleaned_colonies %>%
+  ggplot(aes(x = `Main colonial motherland`))+
+  geom_bar()
+```
+
+## Economic transformation
+
+In the following code blocks I have focused on the economic transformation that appeared in the years of the colonization. 
+First I wanted to see the countries listed in order of the level of economic transformation they have experienced during colonization. Again I have used the arrange and desc function and implemented on the collumn "level of economic transformation (0-100). 
+
+```{r}
+col_transfor %>% 
+  arrange(desc(`level of economic transformation (0-100)`)) %>%
+  select(`Country Name`, `level of economic transformation (0-100)`, everything())
+```
+
+### Visualization of economic transformation
+
+This is a visualization of what I found out in the code block above. 
+
+```{r}
+col_transfor %>%
+  arrange(desc(`level of economic transformation (0-100)`))%>%
+  top_n(30)%>%
+  mutate(`Country Name`= reorder(`Country Name`, `level of economic transformation (0-100)`))%>%
+  ggplot(aes(x = `Country Name`, y = `level of economic transformation (0-100)`)) +
+  geom_col() +
+  xlab(NULL) +
+  coord_flip() +
+      labs(x = "Country Name",
+      y = "Level of economic tranformation",
+      title = "Economic transformation")
+```
+
+### Economic transformation by motherlands 
+
+Now I have focused on which colonial powers that managed to achieve the highest level of economic transformation in their colonies. For this purpose I have now used the cleaned_colonies data which I made in beginning of this script. Furthermore I needed to ask R to do a little math for me in order to first count how many countries each colonial power owned, and then figure out the average level of economic transformations the countries of each colonial power experienced. 
+
+In this code I have used the function count and implemented it on the column "main colonial motherland" and created new data in the environment named total_colonies. 
+```{r}
+cleaned_colonies%>%
+  count(`Main colonial motherland`) -> total_colonies
+```
+
+The following code leads me to the average level of economic transformation each colonial power manages to implement in their colonies. These measures ends up in a new data in the envirorment named eco_trans_motherland. The full description of the code appears in the report.  
+
+```{r}
+cleaned_colonies%>%
+  drop_na(`level of economic transformation (0-100)`)%>%
+  group_by(`Main colonial motherland`)%>%
+  summarise(total = sum(`level of economic transformation (0-100)`))%>%
+  ungroup ()%>%
+  left_join(total_colonies, by = "Main colonial motherland")%>%
+  mutate(average_eco_trans = total/n)%>%
+  arrange(desc(average_eco_trans)) -> eco_trans_motherland
+eco_trans_motherland
+```
+
+### Visualization of economic transformation by motherlands 
+
+The last code will show a visualization of what I just figured out above. For this visualization I have used the function geom_col which makes the height of the bars represent calues in the data. 
+
+```{r}
+eco_trans_motherland%>%
+  mutate(`Main colonial motherland` = reorder(`Main colonial motherland`, average_eco_trans))%>%
+  ggplot(aes(x = `Main colonial motherland`, y = average_eco_trans)) +
+  geom_col() +
+  coord_flip() +
+      labs(x = "Main colonial motherland",
+      y = "Average level of economic tranformation",
+      title = "Economic transformation")
+```
+
+
+
+
